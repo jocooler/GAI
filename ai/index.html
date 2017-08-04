@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../lib/anntoexcel.js"></script>
+<script src="../lib/papaparse.min.js"></script>
+<script src="../lib/jquery-3.2.0.min.js"></script>
+<script src="../lib/synaptic.custom.js"></script>
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+<style>
+.own-line { 
+	clear:both;
+	float:none;
+	display:block;
+}
+
+td.bad {
+	background-color:#f99;
+}
+</style>
+
+</head>
+<body>
+<div class="container-fluid">
+	<h1>Data</h1>
+	<label> Upload a CSV <input type="file" id="inputData" accept=".csv, text/csv, application/csv, text/plain"/></label>
+	
+	<div class="columns row">
+	</div>
+	<div class="text-center own-line"><button class="btn btn-primary createModel" onclick="createModel()">Create Model</button></div><br />
+	<!--<div class="text-center own-line"><button class="btn btn-primary" onclick="download(JSON.stringify(trainingData.concat(testingData)), 'data.json')">Save Data</button></div>-->
+	
+	<div class="network row">
+	<h1>Network</h1>
+		<div class="col-md-6 col-lg-4 col-md-push-3 col-lg-push-4">
+		<input type="number" disabled class="form-control" id="inputLayerSize"/>
+		<div class="input-group">
+		<input type="number" class="form-control layerSize"/><span class="input-group-btn"><button class="btn btn-small btn-danger" onclick="removeLayer(this)">Remove</button></span>
+		</div>
+		<div class="input-group">
+		<input type="number" class="form-control layerSize"/><span class="input-group-btn"><button class="btn btn-small btn-danger" onclick="removeLayer(this)">Remove</button></span>
+		</div>
+		<input type="number" disabled class="form-control" id="outputLayerSize"/>
+		</div>
+	</div>
+	<br />
+	<div class="text-center own-line"><button class="btn btn-primary" onclick="addLayer()">Add Layer</button> <button class="btn btn-success" onclick="buildNetwork()">Build Network</button></div>
+	<br />
+	<div class="row">
+	<div class="col-md-6 col-lg-4 col-md-push-3 col-lg-push-4">
+		<label><input class="form-control" type="number" id="iterations" value="100"/>Iterations</label>
+		<label><input class="form-control" type="number" id="batchSize"  value="20" />Batch Size</label>
+		<label><input class="form-control" type="number" id="learning"   value="0.1"/>Learning Rate</label>
+		<label><input class="form-control" type="number" id="errorRate"  value="0.005"/>Error Rate</label>
+		<div class="text-center own-line">
+			<button class="btn btn-success" onclick="trainNetwork(showErrorRate)">Train Network</button>
+		</div>
+	</div>
+	</div>
+	
+	
+	
+	
+	<div class="trainer row">
+	<h1>Validation</h1>
+	<div class="text-center own-line"><button class="btn btn-primary" onclick="validate($(this).parent().next('div'));">Validate Training</button></div>
+	<div></div>
+	</div>
+	
+	
+	<div class="text-center own-line"><button class="btn btn-primary" onclick="download(JSON.stringify(network.toJSON()), 'network.json')">Save Network</button></div>
+	
+	<div class="visual row">
+	<h1>Visual</h1>
+	<div class="text-center own-line"><button class="btn btn-primary" onclick="visualize(network);">Visualize Network</button></div>
+	<canvas id="canvas"></canvas>
+	</div>
+</div>
+
+<div class="hidden">
+	<div class="columnTemplate col-sm-6 col-md-4 col-lg-3">
+		<h4 class="columnName"></h4>
+		<select class="columnType form-control">
+			<option value="Linear">Linear</option>
+			<!--<option value="Logarithmic">Logarithmic</option>-->
+			<option value="Category">Category</option>
+			<option value="Ignore">Ignore</option>
+		</select>
+		<label>Target? <input type="checkbox" class="target" name="isTarget"/></label>
+	</div>
+</div>
+<script src="ann.js"></script>
+<script src="prepData.js"></script>
+<script src="buildModel.js"></script>
+<script src="validate.js"></script>
+<script src="visualize.js"></script>
+<script src="analyze.js"></script>
+<script src="generateData.js"></script>
+
+<script id="interactions">
+	$('h1').click(function (e) {
+		
+		$('*:not(h1)', $(e.target).parents('.row')[0]).hide();
+	});
+</script>
+</body>
+</html>
