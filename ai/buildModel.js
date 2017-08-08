@@ -35,21 +35,23 @@ function createModel() {
 		var name = $('.columnName', $el).html();
 		if (!$('.target', $el).is(":checked")) {
 			// it's an input
-			inputModel = inputModel.concat(
-				analyzeColumn($('.columnName', $el).html(), $('.columnType', $el).val())
-			);
+			var col = analyzeColumn($('.columnName', $el).html(), $('.columnType', $el).val());
+			if (col) {
+				inputModel = inputModel.concat(col);
+			}
 		} else {
 			// it's an output
-			outputModel = outputModel.concat(
-				analyzeColumn($('.columnName', $el).html(), $('.columnType', $el).val())
-			);
+			var col = analyzeColumn($('.columnName', $el).html(), $('.columnType', $el).val());
+			if (col) {
+				outputModel = outputModel.concat(col);
+			}
 		}
 	});
 	
 	// figure out which inputs/outputs go with which columns.
 	
 	$.each(inputModel, function (i, m) {
-		if (!Array.isArray(inputColumns[m.name])) {
+		if (m && !Array.isArray(inputColumns[m.name])) {
 			inputColumns[m.name] = [];
 		}
 		
@@ -139,10 +141,11 @@ function analyzeColumn(name, type) {
 			}
 			
 			);
+		} else {
+			return;
 		}
-		
-		return models;
 	}
+	return models;
 }
 
 function findUniqueValues(name) {
