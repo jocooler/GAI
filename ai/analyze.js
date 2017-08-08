@@ -23,6 +23,9 @@ function computeRelativeImportance(inputModel, outputModel, splitCategories) {
 			neuron = network.layers.output.list[n],
 			total = 0;
 		
+		if (splitCategories && outputModel[n].type === "Category") {
+			name += " - " + outputModel[n].decode(1);
+		}
 		relative[name] = computePercentages(neuron.relativeImportance);
 	}
 	
