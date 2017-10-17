@@ -2,49 +2,45 @@ function validate(el) {
 	var trainingResult = latestTrainingOutcome;
 	$('table', $(el)).remove();
 	
-	table = '<table class="table"><tr>';
+	table =  '<table class="table">';
+	table += '<tr><th>Buyer</th><th>Origin</th><th>Buy Agreement</th><th>Vendor</th><th>Name</th><th>Status</th><th>Descr</th><th>Vt process used</th><th>Vt agrmt type</th><th>Begin Dt</th><th>Expire Dt</th><th>Max. Amt</th><th>State</th><th>Likeliness of being an IT Project</th></tr>';
 	
-	$.each(outputColumns, function (k, v) {
-		table += '<th>Actual ' + k  + '</th><th>Predicted ' + k + '</th>';
-	});
-	
-	table += '</tr>';
-	
-	var bads = 0,
-		total = testingData.length*Object.keys(outputColumns).length;
-	
-	$.each(testingData, function (i, data) {
-		table += '<tr>';
-		var predictions = network.activate(data.input);
+	$.each(data, function (i, d) {
+		var ITness = 0;
 		
-		$.each(outputColumns, function (name, outputIndices) {
-			var predicted = getPredictedValue(predictions, outputIndices);
-			var actual = getPredictedValue(data.output, outputIndices);
-			var bad = "";
-			
-			if (predicted.type === "Category") {
-				if (predicted.value !== actual.value) {
-					bad = 'bad';
-					bads++;
-				}
-			} else {	// it's linear, see if we're within 10%.
-				var err = predicted.value/actual.value;
-				if (err < 0.90 || err > 1.10) {
-					bad = 'bad';
-					bads++;
-				}
-			}
-			
-			table += '<td>' + actual.value + '</td><td class="' + bad + '">' + predicted.value + '</td>';
-		});
+		try {
+			ITness = network.activate(d.inputs);
+		} catch (e) {
+			console.error(e, d, i);
+			return true;
+		}
 		
-		table += '</tr>';
+		var className = (ITness > 0.5) ? 'it-yes' : 'it-no'; // todo: classes based on certainty - close to 0.5 on both sides get colored.
+			
+		table += '<tr class="' + className + '">'
+		table += '<td>' + d.buyer + '</td>';
+		table += '<td>' + d.origin + '</td>';
+		table += '<td>' + d.buyId + '</td>';
+		table += '<td>' + d.vendor + '</td>';
+		table += '<td>' + d.name + '</td>';
+		table += '<td>' + d.status + '</td>';
+		table += '<td>' + d.desc + '</td>';
+		table += '<td>' + d.process + '</td>';
+		table += '<td>' + d.type + '</td>';
+		table += '<td>' + d.beginDate + '</td>';
+		table += '<td>' + d.expireDate + '</td>';
+		table += '<td>' + d.amount + '</td>';
+		table += '<td>' + d.state + '</td>';
+		table += '<td>' + Math.round(ITness*1000)/10 + '%</td>';
+		table += '</tr>'
+		
+		if (training) {
+			if (i > 100) return false;
+		}
 	});
 	
 	table += '</table>';
 	$(el).append(table);
-	
-	$('h1', $(el).parent()).html('Validation: ' + (1 - Math.round((bads/total)*100)/100) * 100 + '% within 10% error.');
 	
 }
 

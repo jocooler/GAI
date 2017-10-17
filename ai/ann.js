@@ -13,40 +13,32 @@ function download(text, name) { // from http://stackoverflow.com/questions/34156
     a.click();
 }
 
-
-function addLayer() {
-	$('<div class="input-group"><input type="number" class="form-control layerSize"/><span class="input-group-btn"><button class="btn btn-small btn-danger" onclick="removeLayer(this)">Remove</button></span></div>').insertBefore('#outputLayerSize');
-}
-
-function removeLayer(el) {
-	$(el).parents('.input-group').remove();
-}
-
 function buildNetwork() {
-	var inputLayer = new Layer(inputModel.length);
-	var outputLayer = new Layer(outputModel.length);
-		hidden = [];
-	
-	$('.layerSize').each(function (i, e) {
-		hidden.push(new Layer($(e).val()));
-		if (i >= 1) {
-			hidden[i-1].project(hidden[i], Layer.connectionType.ALL_TO_ALL);
+	if (training) {
+		var inputLayer = new Layer(inputModel.length);
+		var outputLayer = new Layer(outputModel.length);
+			hidden = [];
+		
+		$([20, 10]).each(function (i, n) { //hidden layers
+			hidden.push(new Layer(n));
+			if (i >= 1) {
+				hidden[i-1].project(hidden[i], Layer.connectionType.ALL_TO_ALL);
+			}
+		});
+		
+		if (hidden.length > 0) {
+			inputLayer.project(hidden[0], Layer.connectionType.ALL_TO_ALL);
+			hidden[hidden.length - 1].project(outputLayer, Layer.connectionType.ALL_TO_ALL);
+		} else {
+			inputLayer.project(outputLayer, Layer.connectionType.ALL_TO_ALL);
 		}
-	});
-	
-	if (hidden.length > 0) {
-		inputLayer.project(hidden[0], Layer.connectionType.ALL_TO_ALL);
-		hidden[hidden.length - 1].project(outputLayer, Layer.connectionType.ALL_TO_ALL);
-	} else {
-		inputLayer.project(outputLayer, Layer.connectionType.ALL_TO_ALL);
+		
+		network = new Network({
+			input: inputLayer,
+			hidden: hidden,
+			output: outputLayer
+		});
 	}
-	
-	network = new Network({
-		input: inputLayer,
-		hidden: hidden,
-		output: outputLayer
-	});
-	
 	trainer = new Trainer(network);
 }
 

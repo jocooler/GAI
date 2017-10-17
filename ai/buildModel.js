@@ -30,24 +30,22 @@ function createModel() {
 		dataPoint.outputs = [];
 	});
 	
-	// go through columns.
-	$('.columnInfo').each(function (i, $el) {
-		var name = $('.columnName', $el).html();
-		if (!$('.target', $el).is(":checked")) {
-			// it's an input
-			var col = analyzeColumn($('.columnName', $el).html(), $('.columnType', $el).val());
-			if (col) {
-				inputModel = inputModel.concat(col);
-			}
-		} else {
-			// it's an output
-			var col = analyzeColumn($('.columnName', $el).html(), $('.columnType', $el).val());
-			if (col) {
-				outputModel = outputModel.concat(col);
-			}
+	//prepare models of all columns. this is pre-done so the same AI can be used again for additional data with potentially more values without rebuilding the network, but for best results the network should be retrained regularly.
+	inputModel = inputModel.concat(
+		analyzeColumn('buyer', 'buyers'),
+		analyzeColumn('vendor', 'vendors'),
+		analyzeColumn('origin', 'origins'),
+		analyzeColumn('buyer', 'buyers'),
+	);
+	
+	$.each(data[0], function (k, v) { // encode each character, using the first item as a model
+		if (k.indexOf('split') === 0) { // find all the "split" columns
+			inputModel = inputModel.concat(analyzeColumn(k, 'characters'));
 		}
 	});
 	
+	outputModel = analyzeColumn('type', 'output');
+		
 	// figure out which inputs/outputs go with which columns.
 	
 	$.each(inputModel, function (i, m) {
@@ -79,124 +77,52 @@ function createModel() {
 			trainingData.push(a);
 		}
 	});
-	
-	//todo: remove UI code. probably:
-	// return {inputs: inputModel, outputs: outputModel, testing: testingData, training: trainingData}; 
-	
-	$('#inputLayerSize').val(inputModel.length);
-	$('#outputLayerSize').val(outputModel.length);
-	
-	$('.createModel').removeClass('btn-primary').addClass('btn-success').html("Model Up To Date");
+	modelReady = true;
+	$(document).trigger('modelReady');
 }
 
 function analyzeColumn(name, type) {
 	var models = [];
-	if (type === "Ignore") {
-		return;
-	} else if (type === "Category") {
-		var values = findUniqueValues(name);
-		$.each(values, function (i, v) {
-			
-			models.push(
-			
-			{
-				name: name,
-				type: type,
-				encode: function (val) {
-					if (val == v) {
-						return 1;
-					}
-					return 0;
-				},
-				decode: function () {
-					return v;
+	
+	if (type === "output") { // encode output specially
+		return [{ // immediately returns this hard-coded object.
+			name: "type", // at the moment we're just using type to determine a training set.
+			type: 'Linear',
+			encode: function (val) {
+				if (val === 'Info tech' || val === 'Data usage') {
+					return 1;
 				}
-				
+				return 0;
+			},
+			decode: function (v) {
+				return v;
 			}
 			
-			);
-		});
-		
-	} else { // it's linear data
-		var adjustments = computeScaleFactor(name);
-		if (adjustments) { // if !adjustments, the column was usable and is in the log. Look for "has". TODO: make this info available in the UI.
-
-			models.push(
-			
-			{
-				name: name,
-				type: type,
-				encode: function (val) {
-					if (val != +val) { //can't convert to a number... TODO: document this
-						console.info(val + " cannot be reliably converted to a number.");
-						return 0; 
-					}
-					val = +val + adjustments.shift;
-					return +val * adjustments.scale;
-				},
-				decode: function (val) {
-					val = val / adjustments.scale;
-					return val - adjustments.shift;
-				}
-			}
-			
-			);
-		} else {
-			return;
-		}
+		}];
 	}
+	
+	// everything else.
+	
+	var values = encodings[type];
+	$.each(values, function (i, v) {
+		models.push({
+			name: name,
+			type: 'Category',
+			encode: function (val) {
+				if (val == v) {
+					return 1;
+				}
+				return 0;
+			},
+			decode: function () {
+				return v;
+			}
+			
+		});
+	});
 	return models;
 }
 
-function findUniqueValues(name) {
-	var values =[];
-	$.each(data, function (i, d) {
-		var point = d[name];
-		if (!point) {
-			point = null;
-		}
-		if (values.indexOf(point) < 0) {
-			values.push(point);
-		}
-	});
-	return values;
-}
-
-function computeScaleFactor(name) {
-	var max = -9007199254740991,
-		min =  9007199254740991,
-		hasNonNull = false;
-	$.each(data, function (i, d){
-		var point = +d[name]; //unary operator converts to number.
-		
-		if (point != d[name]) {
-			console.info(name + " " + d[name] + " cannot be reliably converted to a number");
-			return true;
-		}
-		
-		hasNonNull = true;
-		
-		if (point < min) {
-			min = point;
-		}
-		if (point > max) {
-			max = point;
-		}
-	});
-
-	var minDelta = 0 - min;
-	max += minDelta;
-	if (!hasNonNull || max == min) {
-		console.log(name, "has no non-null values or is all the same");
-		return;
-	}
-	return {shift: minDelta, scale: 1/roundUp(Math.ceil(max)), max: max, min: min};	
-}
-
-function roundUp(x){
-    var y = Math.pow(10, x.toString().length-1);
-    return Math.ceil(x/y)*y;
-}
 
 function prepareData(data, inputModel, outputModel) {
 	$.each(data, function (i, dataPoint) {
